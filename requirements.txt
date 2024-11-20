@@ -1,0 +1,4 @@
+boto3==1.26.137
+python-dotenv==1.0.0
+click==8.1.3  # For CLI arguments
+requests==2.31.0
