@@ -22,3 +22,17 @@ in the command line, in your local dir:
 source ~/development/venvs/venv_transcript/bin/activate
 cd ~/Documents/code/transcribe_app
 python3 ./scripts/mytranscript.py {input_audio_file.mp"} {output_transcript_file.md}
+```
+
+The script `test_aws.py` helps to check that your aws configuration is working:
+
+```
+python3 ./scripts/test_aws.py
+```
+
+The output will be something like:
+
+```
+Successfully connected to AWS
+Available buckets: ['bucket_1', 'bucket_1', '...', 'bucket_n']
+```
