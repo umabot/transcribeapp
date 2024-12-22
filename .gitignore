@@ -1,9 +1,52 @@
-.env
+# Python-related
 __pycache__/
 *.pyc
-.DS_Store
-.vscode/
-*.log
-output/
 venv/
+*.log
+
+# Environment and secrets
+.env
+
+# OS-specific files
+.DS_Store
+Thumbs.db
+
+# Audio files
 *.mp3
+*.wav
+*.flac
+*.aac
+*.ogg
+*.m4a
+*.wma
+*.aiff
+*.alac
+*.pcm
+*.aif
+*.aifc
+*.au
+*.snd
+*.opus
+
+# Output and local files
+output/
+local_files/
+temp/
+
+# AWS related
+.aws/
+*.pem
+
+# Jupyter Notebooks
+.ipynb_checkpoints/
+*.ipynb
+
+# Database
+*.db
+*.sqlite3
+
+# Logs and debugging
+logs/
+debug/
+*.log
+*.debug

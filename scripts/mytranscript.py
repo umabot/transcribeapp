@@ -17,7 +17,8 @@ load_dotenv()
 @click.command()
 @click.argument('audio_file', type=click.Path(exists=True))
 @click.argument('output_file', type=click.Path())
-def transcribe(audio_file, output_file):
+@click.option('--language', '-l', help='Language code (e.g., es-ES, en-US). If not provided, automatic detection will be used.')
+def transcribe(audio_file, output_file, language):
     """Transcribe audio file to markdown text"""
     try:
         transcriber = AWSTranscriber()
@@ -26,8 +27,8 @@ def transcribe(audio_file, output_file):
         click.echo(f"Starting transcription of {audio_file}...")
         
         # Process transcription
-        text = transcriber.transcribe_file(audio_file)
-        storage.save_markdown(text, output_file, audio_file)
+        text = transcriber.transcribe_file(audio_file, language)
+        storage.save_markdown(text, output_file, audio_file, language)
         
         click.echo(f"Transcription completed! Output saved to {output_file}")
         

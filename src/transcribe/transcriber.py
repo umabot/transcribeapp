@@ -26,7 +26,7 @@ class AWSTranscriber:
             print(f"Error uploading to S3: {e}")
             raise
 
-    def transcribe_file(self, input_file: str) -> str:
+    def transcribe_file(self, input_file: str, language_code: str = None) -> str:
         job_name = f"transcription-{uuid.uuid4()}"
         file_format = Path(input_file).suffix[1:]  # Remove the dot from extension
         
@@ -35,13 +35,23 @@ class AWSTranscriber:
             s3_uri = self.upload_to_s3(input_file)
             
             print(f"Starting transcription job: {job_name}")
+            # Prepare transcription parameters
+            transcription_params = {
+                'TranscriptionJobName': job_name,
+                'Media': {'MediaFileUri': s3_uri},
+                'MediaFormat': file_format,
+            }
+            
+            # If language_code is provided, use it. Otherwise, enable automatic language identification
+            if language_code:
+                transcription_params['LanguageCode'] = language_code
+            else:
+                transcription_params['IdentifyLanguage'] = True
+                # Optionally, you can specify the language options to limit the detection
+                # transcription_params['LanguageOptions'] = ['en-US', 'es-ES', 'fr-FR']
+            
             # Start transcription job
-            response = self.transcribe_client.start_transcription_job(
-                TranscriptionJobName=job_name,
-                Media={'MediaFileUri': s3_uri},
-                MediaFormat=file_format,
-                LanguageCode='en-US'
-            )
+            response = self.transcribe_client.start_transcription_job(**transcription_params)
             
             # Wait for completion
             while True:
@@ -60,6 +70,11 @@ class AWSTranscriber:
                 transcript_uri = status['TranscriptionJob']['Transcript']['TranscriptFileUri']
                 print(f"Downloading transcript from: {transcript_uri}")
                 
+                # Get the identified language if automatic detection was used
+                if not language_code:
+                    identified_language = status['TranscriptionJob'].get('LanguageCode', 'unknown')
+                    print(f"Identified language: {identified_language}")
+                
                 # Download and parse the JSON
                 response = requests.get(transcript_uri)
                 transcript_data = response.json()
@@ -73,13 +88,3 @@ class AWSTranscriber:
         except ClientError as e:
             print(f"AWS Error: {e}")
             raise
-        finally:
-            # Cleanup: Delete the audio file from S3
-            try:
-                self.s3_client.delete_object(
-                    Bucket=self.bucket_name,
-                    Key=f"uploads/{Path(input_file).name}"
-                )
-                print("Cleaned up temporary S3 file")
-            except Exception as e:
-                print(f"Warning: Could not delete temporary S3 file: {e}")

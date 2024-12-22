@@ -1,38 +1,79 @@
 # Transcribe python script
-This is v.0.0
-It is intended to run from the command line in MacOS as a python script, use as input the audio file and an outpu file.
+This application transcribes audio files to text using AWS Transcribe. It supports various audio file formats and allows for language specification.
 
-It will call aws transcrive service, pass the audio and get the transcribed text
+It is intended to run from the command line in MacOS as a python script, use as input the audio file and an output file.
 
-## Created using LLM
-I used Claude Sonet via You.com agent called `Python dev`
+It will call aws transcribe service, pass the audio and get the transcribed text in a markdown file (*.md)
 
-Transcript of prompt [here](https://you.com/search?q=let%27s+start+with+a+small+improvement.%0A%0AIn+the+.md+output+file+now+you+have+a+section+that+has%3A%0A%0A%23...&cid=c1_40096e49-c992-4532-99f2-14e0f7859288&tbm=youchat)
+## Version
+v.0.1
 
-## aws settings
-It is using a dedicated and limited use in my personal aws account.
+## Prerequisites
 
-The S3 bucket created is `transcribeapp`
+- Python 3.x
+- AWS account with appropriate permissions for AWS Transcribe and S3
+- Virtual environment (recommended)
 
-And it uses [aws transcribe service](https://eu-west-3.console.aws.amazon.com/transcribe/home?region=eu-west-3#welcome)
+## Installation
+
+1. Clone the repository:
+    ```sh
+    git clone https://github.com/yourusername/transcribe_app.git
+    cd transcribe_app
+    ```
+
+2. Create and activate a virtual environment:
+    ```sh
+    python3 -m venv venv_transcribe
+    source venv_transcribe/bin/activate
+    ```
+
+3. Install the required packages:
+    ```sh
+    pip install -r requirements.txt
+    ```
 
 # Usage
-in the command line, in your local dir:
-```
-source ~/development/venvs/venv_transcript/bin/activate
-cd ~/Documents/code/transcribe_app
-python3 ./scripts/mytranscript.py {input_audio_file.mp"} {output_transcript_file.md}
-```
+## Usage
 
-The script `test_aws.py` helps to check that your aws configuration is working:
+In the command line, in your local directory:
 
-```
+1. Activate the virtual environment:
+    ```sh
+    source ~/development/venvs/venv_transcribe/bin/activate
+    ```
+
+2. Navigate to the project directory:
+    ```sh
+    cd ~/Documents/code/transcribe_app
+    ```
+
+3. Run the transcription script:
+    ```sh
+    python3 ./scripts/mytranscript.py {input_audio_file.mp3} {output_transcript_file.md} --language en-US
+    ```
+
+## Testing AWS Configuration
+
+The script `test_aws.py` helps to check that your AWS configuration is working:
+
+```sh
 python3 ./scripts/test_aws.py
 ```
 
-The output will be something like:
+# Troubleshooting
+If you encounter issues, check the following:
+- Ensure your AWS credentials are correct and have the necessary permissions.
+- Verify that the input audio file exists and is in a supported format.
+- Check the AWS Transcribe service limits and quotas.
 
-```
-Successfully connected to AWS
-Available buckets: ['bucket_1', 'bucket_1', '...', 'bucket_n']
-```
+# Contributing
+Contributions are welcome! Please open an issue or submit a pull request.
+
+# License
+This project is licensed under the MIT License. See the [LICENSE](./LICENSE) file for details.
+
+### Read more
+Go to the DIR `./docs` to check for more configuration settings
+
+[licenseLink]: ./LICENSE

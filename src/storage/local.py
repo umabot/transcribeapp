@@ -6,7 +6,7 @@ import sys
 
 class LocalStorage:
     @staticmethod
-    def save_markdown(text: str, output_file: str, input_file: str):
+    def save_markdown(text: str, output_file: str, input_file: str, language: str = None):
         output_path = Path(output_file)
         input_path = Path(input_file)
         output_path.parent.mkdir(parents=True, exist_ok=True)
@@ -33,6 +33,7 @@ class LocalStorage:
 - File Size: {file_size_mb:.2f} MB
 - Duration: [Audio duration will be added in future version]
 - Format: {input_path.suffix[1:].upper()}
+- Language: {"Auto-detected" if not language else language}
 
 ## System Information
 - Operating System: {system_info['OS']} ({system_info['OS Version']})
@@ -41,7 +42,7 @@ class LocalStorage:
 
 ## Processing Information
 - Transcription Service: AWS Transcribe
-- Language: English (en-US)
+- Language: {"Auto-detected" if not language else language}
 - Output Format: Markdown
 
 ## Content
