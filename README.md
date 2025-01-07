@@ -1,12 +1,20 @@
 # Transcribe python script
-This application transcribes audio files to text using AWS Transcribe. It supports various audio file formats and allows for language specification.
+This application transcribes audio files to text using AWS Transcribe. It supports various audio file formats and allows for language specification. Also it includes *diarization* (supported by [Partitioning speakers (diarization)](https://docs.aws.amazon.com/transcribe/latest/dg/diarization.html))
 
 It is intended to run from the command line in MacOS as a python script, use as input the audio file and an output file.
 
 It will call aws transcribe service, pass the audio and get the transcribed text in a markdown file (*.md)
 
-## Version
-v.0.1
+## Version & Release Notes
+### v.0.3 - release date 2025-01-07
+- added diarization functionality
+- user can define the number of speakers in the audio file (default=2)
+- with option --no-diarization the script will not do diarization
+### v.0.2 - release date 2024-12-26
+- added automatic language identification
+- added optional parameter to define the language of the audio (supports ISO code like es-ES, fr-FR, en-US, etc) 
+### v.0.1 - release date 2024-11-15
+- takes an audio file and transcribes it, output format of the transcription in *markdown* 
 
 ## Prerequisites
 
