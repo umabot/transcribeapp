@@ -26,7 +26,7 @@ class AWSTranscriber:
             print(f"Error uploading to S3: {e}")
             raise
 
-    def transcribe_file(self, input_file: str, language_code: str = None) -> str:
+    def transcribe_file(self, input_file: str, language_code: str = None, enable_diarization: bool = True, max_speakers: int = 2) -> str:
         job_name = f"transcription-{uuid.uuid4()}"
         file_format = Path(input_file).suffix[1:]  # Remove the dot from extension
         
@@ -35,11 +35,16 @@ class AWSTranscriber:
             s3_uri = self.upload_to_s3(input_file)
             
             print(f"Starting transcription job: {job_name}")
+            
             # Prepare transcription parameters
             transcription_params = {
                 'TranscriptionJobName': job_name,
                 'Media': {'MediaFileUri': s3_uri},
                 'MediaFormat': file_format,
+                'Settings': {
+                    'ShowSpeakerLabels': enable_diarization,
+                    'MaxSpeakerLabels': max_speakers
+                }
             }
             
             # If language_code is provided, use it. Otherwise, enable automatic language identification
@@ -79,9 +84,7 @@ class AWSTranscriber:
                 response = requests.get(transcript_uri)
                 transcript_data = response.json()
                 
-                # Extract the actual transcript text
-                transcript_text = transcript_data['results']['transcripts'][0]['transcript']
-                return transcript_text
+                return transcript_data
             else:
                 raise Exception(f"Transcription failed with status: {job_status}")
                 

@@ -18,7 +18,9 @@ load_dotenv()
 @click.argument('audio_file', type=click.Path(exists=True))
 @click.argument('output_file', type=click.Path())
 @click.option('--language', '-l', help='Language code (e.g., es-ES, en-US). If not provided, automatic detection will be used.')
-def transcribe(audio_file, output_file, language):
+@click.option('--speakers', '-s', type=int, help='Maximum number of speakers to identify (2-10)', default=2)
+@click.option('--diarization/--no-diarization', default=True, help='Enable/disable speaker diarization')
+def transcribe(audio_file, output_file, language, speakers, diarization):
     """Transcribe audio file to markdown text"""
     try:
         transcriber = AWSTranscriber()
@@ -27,8 +29,8 @@ def transcribe(audio_file, output_file, language):
         click.echo(f"Starting transcription of {audio_file}...")
         
         # Process transcription
-        text = transcriber.transcribe_file(audio_file, language)
-        storage.save_markdown(text, output_file, audio_file, language)
+        text = transcriber.transcribe_file(audio_file, language, enable_diarization=diarization, max_speakers=speakers)
+        storage.save_markdown(text, output_file, audio_file, language, speakers, diarization)
         
         click.echo(f"Transcription completed! Output saved to {output_file}")
         
