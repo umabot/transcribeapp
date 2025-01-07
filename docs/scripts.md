@@ -3,6 +3,21 @@ Under `./scripts` you will find the 2 scripts:
 - `test_aws.py` -> to test the aws configuration and connectivity from your command line
 - `mytranscript.py` -> actual script to transcribe an audio file to text
 
+## Basic usage
+```sh
+python3 mytranscript.py input.wav output.md
+```
+
+### With options
+```sh
+python3 mytranscript.py input.wav output.md --language fr-FR --speakers 3
+```
+
+### Get help
+```sh
+python3 mytranscript.py --help
+```
+
 ## Usage
 
 In the command line, in your local directory:
