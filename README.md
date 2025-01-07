@@ -10,10 +10,10 @@ It will call aws transcribe service, pass the audio and get the transcribed text
 - added diarization functionality
 - user can define the number of speakers in the audio file (default=2)
 - with option --no-diarization the script will not do diarization
-### v.0.2 - release date 2024-12-26
+### v.0.2 - release date 2024-12-22
 - added automatic language identification
 - added optional parameter to define the language of the audio (supports ISO code like es-ES, fr-FR, en-US, etc) 
-### v.0.1 - release date 2024-11-15
+### v.0.1 - release date 2024-11-21
 - takes an audio file and transcribes it, output format of the transcription in *markdown* 
 
 ## Prerequisites
