@@ -29,6 +29,7 @@ Thumbs.db
 *.opus
 
 # Output and local files
+input/
 output/
 local_files/
 temp/
