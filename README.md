@@ -8,6 +8,19 @@ It will call aws transcribe service, pass the audio and get the transcribed text
 
 ## Version & Release Notes
 
+### v.0.4 - release date 2025-07-19
+
+- **Improved Error Handling**: Enhanced error validation and user experience
+  - Added file format validation before AWS API calls
+  - Converts AWS `ClientError` exceptions to user-friendly messages
+  - Validates speaker count range (1-10) with clear error messages
+  - Added graceful exit with `sys.exit(1)` instead of raw exceptions
+  - Clear error messages with specific guidance on how to fix issues
+  - Visual indicators using ❌ emoji for error messages
+  - Supported formats: `amr`, `flac`, `wav`, `ogg`, `mp3`, `mp4`, `webm`, `m4a`
+
+> For detailed release notes and technical changes, see [CHANGELOG.md](CHANGELOG.md)
+
 ### v.0.3 - release date 2025-01-07
 
 - added diarization functionality
@@ -75,12 +88,45 @@ In the command line, in your local directory:
     python3 ./scripts/mytranscript.py {input_audio_file.mp3} {output_transcript_file.md} --language en-US
     ```
 
+4. Run with --help for more options
+
+    ```sh
+    % python3 ./scripts/mytranscript.py --help
+    Usage: mytranscript.py [OPTIONS] AUDIO_FILE OUTPUT_FILE
+
+    Transcribe audio file to markdown text
+
+    Options:
+    -l, --language TEXT             Language code (e.g., es-ES, en-US). If not
+                                    provided, automatic detection will be used.
+    -s, --speakers INTEGER          Maximum number of speakers to identify
+                                    (2-10)
+    --diarization / --no-diarization
+                                    Enable/disable speaker diarization
+    --help                          Show this message and exit.
+    ```
+
+## Error Handling
+
+The application now provides improved error handling with clear, user-friendly messages:
+
+- **File Format Validation**: Automatically checks if your audio file format is supported before uploading
+- **Clear Error Messages**: Instead of technical AWS errors, you'll see helpful messages like:
+  ```
+  ❌ Unsupported file format: 'mov'. AWS Transcribe supports: amr, flac, m4a, mp3, mp4, ogg, wav, webm
+  ```
+- **Parameter Validation**: Validates input parameters (e.g., speaker count must be between 2-10)
+- **AWS Error Translation**: Converts complex AWS error codes into understandable messages
+- **Visual Indicators**: Uses ❌ and ✅ emojis to clearly indicate success or failure
+
 ## Testing AWS Configuration
 
 The script `test_aws.py` helps to check that your AWS configuration is working:
 
 ```sh
 python3 ./scripts/test_aws.py
+Successfully connected to AWS
+Available buckets: [<your-list-of-s3-buckets>]
 ```
 
 # Troubleshooting

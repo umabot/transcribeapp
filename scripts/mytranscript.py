@@ -32,11 +32,25 @@ def transcribe(audio_file, output_file, language, speakers, diarization):
         text = transcriber.transcribe_file(audio_file, language, enable_diarization=diarization, max_speakers=speakers)
         storage.save_markdown(text, output_file, audio_file, language, speakers, diarization)
         
-        click.echo(f"Transcription completed! Output saved to {output_file}")
+        click.echo(f"✅ Transcription completed! Output saved to {output_file}")
+        
+    except ValueError as e:
+        # Handle validation and business logic errors
+        click.echo(f"❌ {e}", err=True)
+        sys.exit(1)
+        
+    except FileNotFoundError as e:
+        click.echo(f"❌ File not found: {e}", err=True)
+        sys.exit(1)
+        
+    except PermissionError as e:
+        click.echo(f"❌ Permission error: {e}", err=True)
+        sys.exit(1)
         
     except Exception as e:
-        click.echo(f"Error: {e}", err=True)
-        raise
+        click.echo(f"❌ Unexpected error: {e}", err=True)
+        click.echo("Please check your configuration and try again.", err=True)
+        sys.exit(1)
 
 if __name__ == '__main__':
     transcribe()
