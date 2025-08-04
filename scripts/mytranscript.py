@@ -20,6 +20,7 @@ load_dotenv()
 @click.option('--language', '-l', help='Language code (e.g., es-ES, en-US). If not provided, automatic detection will be used.')
 @click.option('--speakers', '-s', type=int, help='Maximum number of speakers to identify (1-10)', default=1)
 @click.option('--diarization/--no-diarization', default=True, help='Enable/disable speaker diarization')
+
 def transcribe(audio_file, output_file, language, speakers, diarization):
     """Transcribe audio file to markdown text"""
     try:
