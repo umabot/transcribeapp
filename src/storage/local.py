@@ -15,6 +15,24 @@ class LocalStorage:
         file_stats = input_path.stat()
         file_size_mb = file_stats.st_size / (1024 * 1024)  # Convert to MB
         
+        # Extract duration from transcript data
+        duration_seconds = 0
+        if isinstance(transcript_data, dict) and 'results' in transcript_data:
+            items = transcript_data['results'].get('items', [])
+            if items:
+                # Find the last item with end_time
+                for item in reversed(items):
+                    if 'end_time' in item:
+                        duration_seconds = float(item['end_time'])
+                        break
+        
+        # Format duration
+        duration_str = f"{duration_seconds:.2f}s"
+        if duration_seconds >= 60:
+            minutes = int(duration_seconds // 60)
+            seconds = duration_seconds % 60
+            duration_str = f"{minutes}m {seconds:.2f}s"
+        
         # Get system information
         system_info = {
             'OS': platform.system(),
@@ -58,7 +76,15 @@ class LocalStorage:
                     
                     for item in segment_items:
                         if 'alternatives' in item and item['alternatives']:
-                            current_text.append(item['alternatives'][0]['content'])
+                            content = item['alternatives'][0]['content']
+                            # Handle punctuation: no space before punctuation
+                            if item.get('type') == 'punctuation':
+                                if current_text:
+                                    current_text[-1] += content
+                                else:
+                                    current_text.append(content)
+                            else:
+                                current_text.append(content)
                 
                 # Don't forget to output the last speaker's text
                 if current_text:
@@ -75,7 +101,7 @@ class LocalStorage:
 - Created: {current_time}
 - Source File: {input_path.name}
 - File Size: {file_size_mb:.2f} MB
-- Duration: [Audio duration will be added in future version]
+- Duration: {duration_str}
 - Format: {input_path.suffix[1:].upper()}
 - Language: {"Auto-detected" if not language else language}
 - Speakers: {speakers}

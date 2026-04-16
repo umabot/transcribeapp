@@ -14,17 +14,26 @@ from src.storage.local import LocalStorage
 # Load environment variables
 load_dotenv()
 
+# Validate required environment variables
+required_vars = ['AWS_ACCESS_KEY_ID', 'AWS_SECRET_ACCESS_KEY', 'AWS_REGION', 'AWS_S3_BUCKET']
+missing_vars = [var for var in required_vars if not os.getenv(var)]
+if missing_vars:
+    click.echo(f"❌ Missing required environment variables: {', '.join(missing_vars)}", err=True)
+    click.echo("Please check your .env file. See docs/env.md for configuration.", err=True)
+    sys.exit(1)
+
 @click.command()
 @click.argument('audio_file', type=click.Path(exists=True))
 @click.argument('output_file', type=click.Path())
 @click.option('--language', '-l', help='Language code (e.g., es-ES, en-US). If not provided, automatic detection will be used.')
-@click.option('--speakers', '-s', type=int, help='Maximum number of speakers to identify (1-10)', default=1)
+@click.option('--speakers', '-s', type=int, help='Maximum number of speakers to identify (1-10)', default=2)
 @click.option('--diarization/--no-diarization', default=True, help='Enable/disable speaker diarization')
 
 def transcribe(audio_file, output_file, language, speakers, diarization):
     """Transcribe audio file to markdown text"""
     try:
-        transcriber = AWSTranscriber()
+        region = os.getenv('AWS_REGION')
+        transcriber = AWSTranscriber(region_name=region)
         storage = LocalStorage()
         
         click.echo(f"Starting transcription of {audio_file}...")
