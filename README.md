@@ -15,11 +15,11 @@
 
 ---
 # About
-This application transcribes audio files to text using AWS Transcribe. It supports various audio file formats and allows for language specification. Also it includes *diarization* (supported by [Partitioning speakers (diarization)](https://docs.aws.amazon.com/transcribe/latest/dg/diarization.html))
+This application transcribes audio files to text using AWS Transcribe, Google Cloud Speech-to-Text, Azure AI Speech, or local Whisper. It supports various audio file formats and allows for language specification. It also includes *diarization* where supported by the selected provider.
 
-It is intended to run from the command line in MacOS as a python script, use as input the audio file and an output file.
+It is intended to run from the command line in macOS as a Python script, using an audio file as input and producing a markdown transcript as output.
 
-It will call aws transcribe service, pass the audio and get the transcribed text in a markdown file (*.md)
+For secure GCP local setup, see **docs/gcp_config.md**.
 
 ## Version & Release Notes
 

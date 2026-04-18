@@ -3,28 +3,56 @@ import datetime
 import os
 import platform
 import sys
+from typing import Optional
+
 
 class LocalStorage:
+    """
+    Handles saving transcript data to markdown files.
+    
+    Supports both the new standardized format from all providers
+    and legacy AWS raw response format for backward compatibility.
+    """
+    
     @staticmethod
-    def save_markdown(transcript_data: dict, output_file: str, input_file: str, language: str = None, speakers: int = 2, diarization: bool = True):
+    def save_markdown(
+        transcript_data: dict, 
+        output_file: str, 
+        input_file: str, 
+        language: Optional[str] = None, 
+        speakers: int = 2, 
+        diarization: bool = True,
+        provider: str = "AWS Transcribe"
+    ):
+        """
+        Save transcript data to a markdown file.
+        
+        Args:
+            transcript_data: Transcript data (standardized or AWS raw format)
+            output_file: Path to output markdown file
+            input_file: Path to original audio file
+            language: Language code or None
+            speakers: Number of speakers
+            diarization: Whether diarization was enabled
+            provider: Provider name for display
+        """
         output_path = Path(output_file)
         input_path = Path(input_file)
         output_path.parent.mkdir(parents=True, exist_ok=True)
         
         # Get file metadata
         file_stats = input_path.stat()
-        file_size_mb = file_stats.st_size / (1024 * 1024)  # Convert to MB
+        file_size_mb = file_stats.st_size / (1024 * 1024)
         
-        # Extract duration from transcript data
-        duration_seconds = 0
-        if isinstance(transcript_data, dict) and 'results' in transcript_data:
-            items = transcript_data['results'].get('items', [])
-            if items:
-                # Find the last item with end_time
-                for item in reversed(items):
-                    if 'end_time' in item:
-                        duration_seconds = float(item['end_time'])
-                        break
+        # Detect format and extract data accordingly
+        if LocalStorage._is_standardized_format(transcript_data):
+            transcript_text, duration_seconds, detected_provider = \
+                LocalStorage._process_standardized_format(transcript_data, diarization)
+            provider = detected_provider or provider
+        else:
+            # Legacy AWS raw format
+            transcript_text, duration_seconds = \
+                LocalStorage._process_aws_format(transcript_data, diarization)
         
         # Format duration
         duration_str = f"{duration_seconds:.2f}s"
@@ -38,62 +66,27 @@ class LocalStorage:
             'OS': platform.system(),
             'OS Version': platform.version(),
             'Python Version': sys.version.split()[0],
-            'AWS Region': os.getenv('AWS_REGION', 'unknown')
         }
         
-        # Process transcript with speaker labels
-        transcript_text = ""
+        # Add region info for cloud providers
+        region_info = ""
+        if provider == "AWS Transcribe":
+            region_info = f"\n- AWS Region: {os.getenv('AWS_REGION', 'unknown')}"
+        elif provider == "Azure AI Speech":
+            region_info = f"\n- Azure Region: {os.getenv('AZURE_SPEECH_REGION', 'unknown')}"
         
-        if isinstance(transcript_data, dict) and 'results' in transcript_data:
-            results = transcript_data['results']
-            
-            if diarization and 'speaker_labels' in results:
-                segments = results['speaker_labels']['segments']
-                items = results['items']
-                
-                current_speaker = None
-                current_text = []
-                
-                for segment in segments:
-                    speaker = segment['speaker_label']
-                    start_time = float(segment['start_time'])
-                    end_time = float(segment['end_time'])
-                    
-                    # When speaker changes, output the previous speaker's text
-                    if speaker != current_speaker:
-                        if current_text:
-                            transcript_text += f"\n\n**{current_speaker}**: {' '.join(current_text)}"
-                        current_speaker = speaker
-                        current_text = []
-                    
-                    # Find all items that fall within this segment's time range
-                    segment_items = [
-                        item for item in items
-                        if 'start_time' in item and
-                        float(item['start_time']) >= start_time and
-                        float(item['start_time']) <= end_time
-                    ]
-                    
-                    for item in segment_items:
-                        if 'alternatives' in item and item['alternatives']:
-                            content = item['alternatives'][0]['content']
-                            # Handle punctuation: no space before punctuation
-                            if item.get('type') == 'punctuation':
-                                if current_text:
-                                    current_text[-1] += content
-                                else:
-                                    current_text.append(content)
-                            else:
-                                current_text.append(content)
-                
-                # Don't forget to output the last speaker's text
-                if current_text:
-                    transcript_text += f"\n\n**{current_speaker}**: {' '.join(current_text)}"
-            else:
-                # If no diarization, just use the regular transcript
-                transcript_text = results['transcripts'][0]['transcript']
-
-        # Create markdown content with extended metadata
+        # Extract additional metadata from standardized format
+        extra_metadata = ""
+        if LocalStorage._is_standardized_format(transcript_data):
+            metadata = transcript_data.get('metadata', {})
+            if metadata.get('model'):
+                extra_metadata += f"\n- Model: {metadata['model']}"
+            if metadata.get('device'):
+                extra_metadata += f"\n- Device: {metadata['device']}"
+            if metadata.get('confidence'):
+                extra_metadata += f"\n- Confidence: {metadata['confidence']:.2%}"
+        
+        # Create markdown content
         current_time = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         markdown_content = f"""# Transcription
 
@@ -109,21 +102,151 @@ class LocalStorage:
 
 ## System Information
 - Operating System: {system_info['OS']} ({system_info['OS Version']})
-- Python Version: {system_info['Python Version']}
-- AWS Region: {system_info['AWS Region']}
+- Python Version: {system_info['Python Version']}{region_info}
 
 ## Processing Information
-- Transcription Service: AWS Transcribe
+- Transcription Service: {provider}
 - Language: {"Auto-detected" if not language else language}
-- Output Format: Markdown
+- Output Format: Markdown{extra_metadata}
 
 ## Content
-
 {transcript_text}
 
 ---
-Generated by AWS Transcribe Application
+*Generated by Multi-Cloud Transcription CLI*
 """
-        
-        with open(output_file, 'w') as f:
+
+        # Write to file
+        with open(output_path, 'w', encoding='utf-8') as f:
             f.write(markdown_content)
+        
+        print(f"✅ Transcript saved to: {output_path}")
+        return output_path
+
+    @staticmethod
+    def _is_standardized_format(data: dict) -> bool:
+        """Check if data is in standardized format vs AWS raw format."""
+        return 'transcript' in data and 'segments' in data and 'metadata' in data
+
+    @staticmethod
+    def _process_standardized_format(
+        data: dict, 
+        diarization: bool
+    ) -> tuple:
+        """
+        Process standardized transcript format.
+        
+        Returns:
+            Tuple of (transcript_text, duration_seconds, provider_name)
+        """
+        segments = data.get('segments', [])
+        metadata = data.get('metadata', {})
+        
+        duration_seconds = metadata.get('duration', 0)
+        provider = metadata.get('provider')
+        
+        if diarization and segments:
+            # Format with speaker labels
+            transcript_parts = []
+            current_speaker = None
+            current_text = []
+            
+            for segment in segments:
+                speaker = segment.get('speaker', 'spk_0')
+                text = segment.get('text', '')
+                
+                if speaker != current_speaker:
+                    if current_text:
+                        transcript_parts.append(
+                            f"\n\n**{current_speaker}**: {' '.join(current_text)}"
+                        )
+                    current_speaker = speaker
+                    current_text = [text] if text else []
+                else:
+                    if text:
+                        current_text.append(text)
+            
+            # Don't forget the last speaker
+            if current_text:
+                transcript_parts.append(
+                    f"\n\n**{current_speaker}**: {' '.join(current_text)}"
+                )
+            
+            transcript_text = ''.join(transcript_parts)
+        else:
+            # Use plain transcript
+            transcript_text = data.get('transcript', '')
+        
+        # Check for diarization note (e.g., from Whisper)
+        diarization_note = metadata.get('diarization_note')
+        if diarization_note:
+            transcript_text = f"\n\n> ⚠️ {diarization_note}\n{transcript_text}"
+        
+        return transcript_text, duration_seconds, provider
+
+    @staticmethod
+    def _process_aws_format(data: dict, diarization: bool) -> tuple:
+        """
+        Process legacy AWS raw format for backward compatibility.
+        
+        Returns:
+            Tuple of (transcript_text, duration_seconds)
+        """
+        transcript_text = ""
+        duration_seconds = 0
+        
+        if not isinstance(data, dict) or 'results' not in data:
+            return transcript_text, duration_seconds
+        
+        results = data['results']
+        items = results.get('items', [])
+        
+        # Calculate duration from items
+        for item in reversed(items):
+            if 'end_time' in item:
+                duration_seconds = float(item['end_time'])
+                break
+        
+        if diarization and 'speaker_labels' in results:
+            segments = results['speaker_labels']['segments']
+            
+            current_speaker = None
+            current_text = []
+            
+            for segment in segments:
+                speaker = segment['speaker_label']
+                start_time = float(segment['start_time'])
+                end_time = float(segment['end_time'])
+                
+                if speaker != current_speaker:
+                    if current_text:
+                        transcript_text += f"\n\n**{current_speaker}**: {' '.join(current_text)}"
+                    current_speaker = speaker
+                    current_text = []
+                
+                segment_items = [
+                    item for item in items
+                    if 'start_time' in item and
+                    float(item['start_time']) >= start_time and
+                    float(item['start_time']) <= end_time
+                ]
+                
+                for item in segment_items:
+                    if 'alternatives' in item and item['alternatives']:
+                        content = item['alternatives'][0]['content']
+                        if item.get('type') == 'punctuation':
+                            if current_text:
+                                current_text[-1] += content
+                            else:
+                                current_text.append(content)
+                        else:
+                            current_text.append(content)
+            
+            if current_text:
+                transcript_text += f"\n\n**{current_speaker}**: {' '.join(current_text)}"
+        else:
+            transcripts = results.get('transcripts', [])
+            if transcripts:
+                transcript_text = transcripts[0]['transcript']
+        
+        return transcript_text, duration_seconds
