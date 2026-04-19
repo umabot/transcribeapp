@@ -155,13 +155,13 @@ Optional:
 ## 6) Install Python dependencies for GCP
 
 ```bash
-pip install google-cloud-speech google-cloud-storage
+uv pip install google-cloud-speech google-cloud-storage
 ```
 
 Or install from the project requirements file:
 
 ```bash
-pip install -r requirements.txt
+uv pip install -r requirements.txt
 ```
 
 ---

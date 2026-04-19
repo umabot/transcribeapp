@@ -39,8 +39,8 @@ class GCPTranscriber(BaseTranscriber):
     """
     Google Cloud Speech-to-Text provider implementation.
     
-    Handles audio transcription via GCP Speech-to-Text API with Cloud Storage
-    for audio files (required for long audio > 60 seconds).
+    Handles audio transcription via GCP Speech-to-Text API using a
+    Cloud Storage-backed long-running workflow for all audio files.
     
     Required environment variables:
     - GCP_STORAGE_BUCKET: Cloud Storage bucket name for audio uploads
@@ -202,11 +202,9 @@ class GCPTranscriber(BaseTranscriber):
             config_params['language_code'] = 'en-US'
             config_params['alternative_language_codes'] = ['es-ES', 'fr-FR', 'de-DE', 'it-IT']
         
-        # Check file size - GCS required for > 60 seconds
-        file_size_mb = Path(file_path).stat().st_size / (1024 * 1024)
-        use_gcs = file_size_mb > 10  # Use GCS for larger files
-        
-        return speech_v1.RecognitionConfig(**config_params), use_gcs
+        # Always use the GCS-backed long-running path for GCP. This avoids
+        # sync API failures caused by audio duration limits on compressed files.
+        return speech_v1.RecognitionConfig(**config_params), True
     
     def _convert_to_standard_format(
         self,
@@ -302,7 +300,7 @@ class GCPTranscriber(BaseTranscriber):
         gcs_uri: Optional[str] = None
         
         try:
-            config, use_gcs = self._get_audio_config(file_path, validated_language)
+            config, _ = self._get_audio_config(file_path, validated_language)
             
             # Enable diarization if requested
             if enable_diarization:
@@ -312,29 +310,19 @@ class GCPTranscriber(BaseTranscriber):
                     max_speaker_count=max_speakers,
                 )
                 config.diarization_config = diarization_config
-            
-            if use_gcs:
-                # Upload to GCS for long audio
-                gcs_uri = self._upload_to_gcs(file_path)
-                audio = speech_v1.RecognitionAudio(uri=gcs_uri)
-                
-                print("Starting long-running transcription...")
-                operation = self.speech_client.long_running_recognize(
-                    config=config,
-                    audio=audio
-                )
-                
-                print("Waiting for transcription to complete...")
-                response = operation.result(timeout=3600)  # 1 hour timeout
-            else:
-                # Use inline audio for short files
-                with open(file_path, 'rb') as audio_file:
-                    content = audio_file.read()
-                
-                audio = speech_v1.RecognitionAudio(content=content)
-                
-                print("Starting transcription...")
-                response = self.speech_client.recognize(config=config, audio=audio)
+
+            # Always use GCS plus long-running recognition for GCP audio.
+            gcs_uri = self._upload_to_gcs(file_path)
+            audio = speech_v1.RecognitionAudio(uri=gcs_uri)
+
+            print("Starting long-running transcription...")
+            operation = self.speech_client.long_running_recognize(
+                config=config,
+                audio=audio
+            )
+
+            print("Waiting for transcription to complete...")
+            response = operation.result(timeout=3600)  # 1 hour timeout
             
             print("✓ Transcription complete")
             

@@ -263,23 +263,25 @@ def wrap_provider_exception(
             details=str(exception)
         )
     
-    # Hardware patterns (mainly for local)
-    hardware_patterns = [
-        'memory', 'ram', 'cuda', 'gpu', 'mps', 'metal', 'out of memory'
-    ]
-    if any(pattern in exc_str for pattern in hardware_patterns):
-        return HardwareError(
-            f"Hardware requirement not met for {provider}",
-            details=str(exception)
-        )
-    
     # Validation patterns
     validation_patterns = [
-        'invalid', 'unsupported', 'format', 'not found', 'missing'
+        '400', 'bad request', 'badrequest', 'invalid', 'unsupported',
+        'format', 'not found', 'missing', 'input too long', 'too long'
     ]
     if any(pattern in exc_str for pattern in validation_patterns):
         return ValidationError(
             f"Validation error in {provider}",
+            details=str(exception)
+        )
+
+    # Hardware patterns (mainly for local)
+    hardware_patterns = [
+        'out of memory', 'insufficient memory', 'cuda', 'gpu', 'mps',
+        'metal', 'neural engine'
+    ]
+    if any(pattern in exc_str for pattern in hardware_patterns):
+        return HardwareError(
+            f"Hardware requirement not met for {provider}",
             details=str(exception)
         )
     

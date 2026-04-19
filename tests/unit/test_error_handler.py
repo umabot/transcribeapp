@@ -170,3 +170,13 @@ class TestWrapProviderException:
         wrapped = wrap_provider_exception(original, 'aws')
         
         assert isinstance(wrapped, TranscriptionError)
+
+    def test_wrap_gcp_sync_input_too_long_as_validation_error(self):
+        """GCP input-limit errors should not be misclassified as hardware errors."""
+        original = Exception(
+            "400 Sync input too long. For audio longer than 1 min use "
+            "LongRunningRecognize with a 'uri' parameter."
+        )
+        wrapped = wrap_provider_exception(original, 'gcp')
+
+        assert isinstance(wrapped, ValidationError)
